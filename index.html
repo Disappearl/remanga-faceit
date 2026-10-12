@@ -1,5 +1,5 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Вход через FACEIT</title><style>
+<title>Вход через FACEIT</title><meta name="robots" content="noindex"><style>
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0e0f12;color:#f4f4ef;font:16px/1.4 "Segoe UI",Arial,sans-serif}
 .c{max-width:420px;padding:28px;text-align:center}.c h1{font-size:22px;margin:0 0 10px;color:#f2a900}
 .b{display:inline-block;margin:18px 0 10px;padding:14px 22px;border-radius:10px;background:#f2a900;color:#15110a;font-weight:700;text-decoration:none}
@@ -9,10 +9,29 @@ code{display:block;margin-top:14px;padding:10px;border-radius:8px;background:#1b
 <div class="d">Если бот не открылся — отправь ему эту команду:</div><code id="cmd"></code></div>
 <script>
 const p=new URLSearchParams(location.search),code=p.get("code")||"",state=p.get("state")||"";
+const bot="RePubg_bot",h1=document.querySelector("h1"),t=document.getElementById("t"),go=document.getElementById("go"),cmdEl=document.getElementById("cmd");
+if(p.get("openid.mode")){
+  // вход через Steam (OpenID): подписанный ответ длинный — в ссылку ?start= (64 знака) не влезает,
+  // поэтому открываем чат с ботом с готовой командой (t.me/бот?text=…) — человеку остаётся нажать «Отправить»
+  document.title="Вход через Steam";h1.textContent="Steam подключён";
+  const id=(p.get("openid.claimed_id")||"").split("/").pop(),st=p.get("st")||"";
+  if(p.get("openid.mode")!=="id_res"||!/^7656[0-9]{13}$/.test(id)||!st){
+    h1.textContent="Вход через Steam не завершён";t.textContent="Начни заново командой /steam в боте.";go.style.display="none";cmdEl.style.display="none";
+  }else{
+    const signed=p.get("openid.signed")||"",dflt="signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle";
+    const cmd="/steamid "+[st,id,p.get("openid.assoc_handle"),p.get("openid.response_nonce"),p.get("openid.sig")].join(" ")+(signed===dflt?"":" "+signed);
+    cmdEl.textContent=cmd;
+    t.textContent="Открываю чат с ботом — нажми там «Отправить».";
+    const link="https://t.me/"+bot+"?text="+encodeURIComponent(cmd);
+    go.href=link;location.href=link;
+  }
+}else{
+const epic=state.startsWith("e");   // та же страница служит и входу через Epic Games (state начинается с «e»)
+if(epic){document.title="Вход через Epic Games";h1.textContent="Epic Games подключён";}
 const start="f"+state+"_"+code, ok=/^[A-Za-z0-9_-]{1,64}$/.test(start);
-document.getElementById("cmd").textContent="/fcode "+state+" "+code;
-const link="https://t.me/RePubg_bot?start="+encodeURIComponent(start);
-const go=document.getElementById("go");
-if(!code){document.getElementById("t").textContent="Кода входа нет — начни заново командой /faceit";go.style.display="none";}
-else if(ok){go.href=link;location.href=link;}else{go.style.display="none";document.getElementById("t").textContent="Код длинный — отправь боту команду ниже.";}
+cmdEl.textContent="/fcode "+state+" "+code;
+const link="https://t.me/"+bot+"?start="+encodeURIComponent(start);
+if(!code){t.textContent="Кода входа нет — начни заново командой "+(epic?"/epic":"/faceit");go.style.display="none";}
+else if(ok){go.href=link;location.href=link;}else{go.style.display="none";t.textContent="Код длинный — отправь боту команду ниже.";}
+}
 </script></body></html>
